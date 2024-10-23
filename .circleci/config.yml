@@ -1,6 +1,5 @@
 version: 2.1
 
-# Define a job to be invoked later in a workflow.
 jobs:
   say-hello:
     docker:
@@ -14,9 +13,10 @@ jobs:
   sonarqube:
     working_directory: ~/build
     docker:
-      - image: sonarsource/sonar-scanner-cli
+      - image: cimg/node:current  # Use a complete Docker image that includes `find`
     resource_class: small
     steps:
+      - checkout
       - run: find .
       - attach_workspace:
           at: ~/workspace
@@ -33,10 +33,10 @@ jobs:
             -Dsonar.branch.name="$SONAR_BRANCH" \
             -Dsonar.sources="."
 
-# Define workflows
 workflows:
   say-hello-workflow:
     jobs:
       - say-hello
       - sonarqube
+
 
