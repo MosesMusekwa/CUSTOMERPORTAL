@@ -1,25 +1,13 @@
 version: 2.1
 
 jobs:
-  say-hello:
-    docker:
-      - image: cimg/base:current
-    steps:
-      - checkout
-      - run:
-          name: "Say hello"
-          command: "echo Hello, World!"
-
   sonarqube:
     working_directory: ~/build
     docker:
-      - image: cimg/node:current  # Use a complete Docker image that includes `find`
+      - image: sonarsource/sonar-scanner-cli:latest  # Specify the latest image version
     resource_class: small
     steps:
       - checkout
-      - run: find .
-      - attach_workspace:
-          at: ~/workspace
       - run: |
           SONAR_BRANCH="${CIRCLE_BRANCH:-master}"
           echo "Sonar branch value is: $SONAR_BRANCH"
@@ -36,7 +24,7 @@ jobs:
 workflows:
   say-hello-workflow:
     jobs:
-      - say-hello
       - sonarqube
+
 
 
