@@ -1,19 +1,19 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Register from './components/Register';
-import Login from './components/Login';
+import EmployeeLogin from './components/EmployeeLogin';
+import EmployeeDashboard from './components/EmployeeDashboard';
 import PaymentForm from './components/PaymentForm';
 
 function App() {
   return (
     <Router>
       <div>
-        <h1>Customer Payments Portal</h1>
+        <h1>Employee Payments Portal</h1>
         <Routes>
-          <Route path="/" element={<Register />} />  {/* Default route */}
-          <Route path="/register" element={<Register />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/payment" element={<PaymentForm />} />
+          <Route path="/" element={<EmployeeLogin />} />  {/* Login page route */}
+          <Route path="/login" element={<EmployeeLogin />} />  {/* Login route */}
+          <Route path="/employee/dashboard" element={<EmployeeDashboard />} />  {/* Dashboard for employees */}
+          <Route path="/payment" element={<PaymentForm />} />  {/* Payment form route */}
         </Routes>
       </div>
     </Router>
@@ -21,5 +21,3 @@ function App() {
 }
 
 export default App;
-
-

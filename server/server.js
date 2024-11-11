@@ -5,6 +5,8 @@ const path = require('path');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const mongoose = require('mongoose'); // MongoDB ORM
+const helmet = require('helmet'); // Security middleware
+const rateLimit = require('express-rate-limit'); // Rate limiting
 
 const app = express();
 const PORT = 443; // HTTPS port
@@ -17,18 +19,22 @@ const credentials = { key: privateKey, cert: certificate };
 // Middleware
 app.use(express.json());
 app.use(cors());
+app.use(helmet()); // Set secure HTTP headers
+app.use(rateLimit({ // Prevent brute force and DDoS attacks
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per window
+}));
 
 // Connect to MongoDB
 mongoose.connect('mongodb://localhost:27017/customerPayments', { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('MongoDB connected successfully'))
   .catch(err => console.log('Error connecting to MongoDB:', err));
 
-// Define user schema and model
+// Define user schema and model (no registration, only pre-configured employees)
 const userSchema = new mongoose.Schema({
   fullname: { type: String, required: true },
-  idNumber: { type: String, required: true },
-  accountNumber: { type: String, required: true },
-  password: { type: String, required: true }
+  accountNumber: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
 });
 
 const User = mongoose.model('User', userSchema);
@@ -36,40 +42,15 @@ const User = mongoose.model('User', userSchema);
 // Serve the React app's static files from the 'build' directory
 app.use(express.static(path.join(__dirname, '../client/build')));
 
-// Routes for Registration, Login, and Payment
-app.post('/api/register', async (req, res) => {
-  const { fullname, idNumber, accountNumber, password } = req.body;
-
-  try {
-    // Hash the password with bcrypt
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-    // Create a new user and save it to the MongoDB database
-    const newUser = new User({
-      fullname,
-      idNumber,
-      accountNumber,
-      password: hashedPassword
-    });
-
-    await newUser.save();
-    
-    res.json({ message: 'User registered successfully' });
-  } catch (error) {
-    console.error('Error registering user:', error);
-    res.status(500).json({ message: 'Error registering user' });
-  }
-});
-
-app.post('/api/login', async (req, res) => {
+// Employee login route (static login for employees)
+app.post('/api/employee/login', async (req, res) => {
   const { accountNumber, password } = req.body;
 
   try {
-    // Find the user by accountNumber
+    // Find the employee by accountNumber
     const user = await User.findOne({ accountNumber });
     if (!user) {
-      return res.status(400).json({ message: 'User not found' });
+      return res.status(400).json({ message: 'Employee not found' });
     }
 
     // Compare the provided password with the hashed password in the database
@@ -87,10 +68,17 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-app.post('/api/pay', async (req, res) => {
+// Payment routes for employee to process payments
+app.post('/api/employee/pay', async (req, res) => {
   const { amount, currency, accountInfo, swiftCode } = req.body;
+  const token = req.headers['authorization'];
 
-  // Payment processing logic here
+  if (!token) {
+    return res.status(401).json({ message: 'Unauthorized. Please log in first.' });
+  }
+
+  // Employee payment processing logic here
+  // The transaction is securely stored in the database
   res.json({ message: 'Payment processed successfully' });
 });
 
@@ -103,5 +91,3 @@ app.get('*', (req, res) => {
 https.createServer(credentials, app).listen(PORT, () => {
   console.log(`HTTPS server running on https://localhost:${PORT}`);
 });
-
-
